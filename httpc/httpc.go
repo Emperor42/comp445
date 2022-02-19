@@ -35,6 +35,7 @@ func main() {
 	//START PROCESS INLINE DATA AND FILES
 	/////
 	hasFile, hasInlineData, body := processFilesOrData(args)
+	//remove proces data
 
 	if operation == "get" {
 		if hasFile {
@@ -74,16 +75,29 @@ func main() {
 	//append the operation
 	startLine := strings.ToUpper(operation) + " " + full + " HTTP/1.0\r\n\r\n"
 	request = append(request, startLine)
+
+	if hasFile || hasInlineData {
+		//include the headers for data
+		headers["Content-Length"] = fmt.Sprint(len(body))
+		if hasFile {
+			headers["files"] = body
+		}
+		if hasInlineData {
+			headers["data"] = body
+		}
+	}
+
 	for k, v := range headers {
 		headerLine := k + ": " + v
 		request = append(request, headerLine)
 	}
-	if body != "" {
-		request = append(request, body)
+	if hasFile || hasInlineData {
+		//include the headers for data
+		request = append(request, "\r\n\r\n"+body+"\r\n\r\n")
 	}
 
 	if verbose {
-		fmt.Println(request)
+		fmt.Println("Attemping connection...")
 	}
 
 	addr := fmt.Sprintf("%s:%d", url, port)
@@ -127,14 +141,8 @@ func connect(verbose bool, request []string, conn net.Conn) error {
 	for wait {
 		if _, err := io.ReadFull(conn, buf); err != nil {
 			if err == io.EOF {
-				if verbose {
-					fmt.Println(len(buf))
-				}
 				wait = false
 			} else if err == io.ErrUnexpectedEOF {
-				if verbose {
-					fmt.Println(len(buf))
-				}
 				wait = false
 			} else {
 				return err
@@ -238,6 +246,7 @@ func processFilesOrData(input []string) (bool, bool, string) {
 
 		} else if input[i] == "-d" {
 			dFlag = true
+			fmt.Println("i run")
 			//start reading out the files, checking if it starts with a single or double quote
 			checking := input[i+1]
 			endOfData := 'C'
