@@ -88,7 +88,7 @@ func main() {
 	}
 
 	for k, v := range headers {
-		headerLine := k + ": " + v
+		headerLine := k + ": " + v+"\n"
 		request = append(request, headerLine)
 	}
 	if hasFile || hasInlineData {
